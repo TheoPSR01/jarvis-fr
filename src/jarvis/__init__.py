@@ -5,7 +5,7 @@ from .economie import MODELE_ECONOMIQUE, MODELE_PUISSANT, TARIFS, choisir_modele
 from .memoire import Memoire, Souvenir
 from .outils import Outils
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "Jarvis", "MODELE_ECONOMIQUE", "MODELE_PUISSANT", "Memoire", "Outils", "Reponse", "Souvenir", "TARIFS",
