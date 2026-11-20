@@ -11,6 +11,17 @@ from . import __version__
 from .assistant import Jarvis
 from .economie import MODELE_PUISSANT
 from .memoire import Memoire
+from .outils import Outils
+from .systeme import Minuteurs
+
+BANNIERE = r"""
+        .-~~~-.
+      /  .---.  \       J . A . R . V . I . S .
+     |  /  _  \  |      Just A Rather Very Intelligent System
+     |  | (_) |  |      version {version}
+      \  '---'  /
+        '-...-'
+"""
 
 AIDE = """Commandes : /stats (coûts et économies), /souvenirs (tout lister), /oublie N (effacer le souvenir N),
 /resume (résumé en mémoire), /quitter. Commencez un message par « ! » pour forcer le modèle puissant."""
@@ -43,8 +54,11 @@ def commande(jarvis: Jarvis, ligne: str) -> Optional[str]:
 
 
 def boucle(jarvis: Jarvis, lire: Callable[[], Optional[str]], ecrire: Callable[[str], None],
-           parler: Optional[Callable[[str], object]] = None) -> None:
-    ecrire("Jarvis : À votre service. (/aide pour les commandes)")
+           parler: Optional[Callable[[str], object]] = None, accueil: Optional[str] = None) -> None:
+    accueil = accueil or "À votre service."
+    ecrire(f"Jarvis : {accueil} (/aide pour les commandes)")
+    if parler:
+        parler(accueil)
     while True:
         ligne = lire()
         if ligne is None:
@@ -78,22 +92,54 @@ def main(argv=None) -> int:
     p.add_argument("--nom", default="Monsieur", help="comment Jarvis vous appelle")
     p.add_argument("--memoire", help="fichier de mémoire (défaut : ~/.jarvis/memoire.db)")
     p.add_argument("--puissant", action="store_true", help="toujours utiliser " + MODELE_PUISSANT)
+    p.add_argument("--ville", default=os.environ.get("JARVIS_VILLE"),
+                   help="ville pour la météo et le briefing (ou variable JARVIS_VILLE)")
+    p.add_argument("--veille", action="store_true",
+                   help="avec --voix : écoute en continu et ne répond qu'après le mot « Jarvis »")
+    p.add_argument("--sans-briefing", action="store_true", help="pas de briefing au démarrage")
     args = p.parse_args(argv)
 
     if not os.environ.get("ANTHROPIC_API_KEY"):
         print("Définissez d'abord votre clé d'API : export ANTHROPIC_API_KEY=... "
               "(créez-la sur https://platform.claude.com).", file=sys.stderr)
         return 2
-    jarvis = Jarvis(memoire=Memoire(args.memoire), nom_utilisateur=args.nom,
-                    modele_force=MODELE_PUISSANT if args.puissant else None)
-
     parler = None
     if not args.muet:
         from .voix import parler as _parler, synthese_disponible
         if synthese_disponible():
             parler = _parler
 
-    if args.voix:
+    def alerte(texte: str) -> None:
+        texte = f"{args.nom}, {texte}"
+        print(f"\nJarvis : {texte}")
+        if parler:
+            parler(texte)
+
+    memoire = Memoire(args.memoire)
+    outils = Outils(memoire, ville=args.ville, minuteurs=Minuteurs(alerte=alerte))
+    jarvis = Jarvis(memoire=memoire, outils=outils, nom_utilisateur=args.nom,
+                    modele_force=MODELE_PUISSANT if args.puissant else None)
+    print(BANNIERE.format(version=__version__))
+    accueil = None if args.sans_briefing else jarvis.briefing()
+
+    if args.voix and args.veille:
+        from .voix import ecouter, extraire_commande
+
+        def lire() -> Optional[str]:
+            print("(en veille : dites « Jarvis »...)")
+            while True:
+                demande = extraire_commande(ecouter())
+                if demande is None:
+                    continue
+                if not demande:  # « Jarvis » tout seul : il attend la suite
+                    print(f"Jarvis : Oui, {args.nom} ?")
+                    if parler:
+                        parler(f"Oui, {args.nom} ?")
+                    demande = ecouter() or ""
+                if demande:
+                    print(f"Vous : {demande}")
+                    return demande
+    elif args.voix:
         from .voix import ecouter
 
         def lire() -> Optional[str]:
@@ -110,7 +156,7 @@ def main(argv=None) -> int:
                 return None
 
     try:
-        boucle(jarvis, lire, print, parler)
+        boucle(jarvis, lire, print, parler, accueil)
     except KeyboardInterrupt:
         print("\nJarvis : À bientôt.")
     return 0
