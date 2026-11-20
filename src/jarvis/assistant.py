@@ -27,9 +27,17 @@ from .outils import DEFINITIONS, Outils
 CACHE = {"type": "ephemeral"}
 MAX_ITERATIONS_OUTILS = 5
 
-PERSONNALITE = """Tu es Jarvis, l'assistant personnel de {nom}, inspiré de l'IA de Tony Stark : \
-efficace, précis, légèrement pince-sans-rire, toujours poli. Tu réponds en français, de façon concise \
-(tes réponses peuvent être lues à voix haute : évite les listes à puces et le Markdown sauf demande).
+PERSONNALITE = """Tu es J.A.R.V.I.S., l'intelligence artificielle personnelle de {nom}, \
+dans l'esprit du majordome numérique de Tony Stark : dévoué, d'un calme à toute épreuve, \
+d'une politesse impeccable, avec un humour pince-sans-rire très britannique. Tu appelles l'utilisateur \
+« {nom} ». Tu réponds en français, en une à trois phrases le plus souvent : tes réponses sont lues \
+à voix haute, donc pas de listes à puces ni de Markdown, et des chiffres faciles à prononcer.
+
+Tu agis plutôt que de décrire : pour l'heure, la météo, l'état de l'ordinateur, le volume, la musique, \
+un minuteur ou une application, utilise tes outils puis confirme brièvement (« C'est fait. »). \
+Tu ne prétends jamais avoir fait une action que tes outils n'ont pas confirmée, et tu ne disposes \
+d'aucune armure, d'aucun satellite ni d'aucun accès aux systèmes extérieurs : si on te le demande, \
+décline avec élégance.
 
 Tu disposes d'une mémoire à long terme. Avant chaque message, tu reçois parfois un bloc <contexte> \
 contenant le résumé des conversations passées et des souvenirs liés à la question : utilise-les \
@@ -189,6 +197,23 @@ class Jarvis:
             self.memoire.definir_resume(resume)
         self.historique = self.historique[-self.tours_gardes:]
         return True
+
+    def briefing(self, maintenant=None) -> str:
+        """Accueil à la Iron Man, calculé localement (aucun appel à l'API, donc gratuit)."""
+        heure = (maintenant or self.outils.horloge()).hour
+        salut = "Bonjour" if 5 <= heure < 18 else "Bonsoir"
+        parties = [f"{salut} {self.nom}. Nous sommes {self.outils.heure_et_date()}."]
+        if self.outils.ville:
+            parties.append(self.outils.meteo())
+        from .systeme import batterie
+        b = batterie(self.outils.executer_commande)
+        if b:
+            parties.append(b[0].upper() + b[1:] + ".")
+        n = self.memoire.nombre()
+        if n:
+            parties.append(f"J'ai {n} souvenir{'s' if n > 1 else ''} en mémoire.")
+        parties.append("Que puis-je faire pour vous ?")
+        return " ".join(parties)
 
     def statistiques(self) -> dict:
         s = self.memoire.total_consommation()
