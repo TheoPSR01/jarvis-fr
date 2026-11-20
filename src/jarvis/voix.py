@@ -7,6 +7,7 @@ l'audio au service de reconnaissance de Google.
 
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 import sys
@@ -44,3 +45,16 @@ def ecouter(delai: int = 8, langue: str = "fr-FR") -> Optional[str]:
         return r.recognize_google(audio, language=langue)
     except sr.UnknownValueError:
         return None
+
+MOT_ACTIVATION = "jarvis"
+
+
+def extraire_commande(texte: Optional[str], mot: str = MOT_ACTIVATION) -> Optional[str]:
+    """Pour le mode veille : None si le mot d'activation est absent, sinon la demande
+    qui suit (chaîne vide si l'utilisateur n'a dit que « Jarvis »)."""
+    if not texte:
+        return None
+    m = re.search(rf"\b{re.escape(mot)}\b[\s,.!?:]*", texte, flags=re.IGNORECASE)
+    if not m:
+        return None
+    return (texte[:m.start()] + texte[m.end():]).strip(" ,.!?:")
