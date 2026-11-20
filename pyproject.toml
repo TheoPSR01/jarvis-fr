@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jarvis-fr"
+version = "0.1.0"
+description = "Assistant personnel en français basé sur l'API Claude : mémoire locale, cache de prompt et résumés pour dépenser moins, voix sur Mac"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [{ name = "Théo Pasquier" }]
+keywords = ["assistant", "jarvis", "claude", "mémoire", "prompt caching", "voix", "français"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "Natural Language :: French",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = ["anthropic>=0.40"]
+
+[project.optional-dependencies]
+voix = ["SpeechRecognition>=3.10", "PyAudio>=0.2.13"]
+dev = ["pytest>=7"]
+
+[project.scripts]
+jarvis = "jarvis.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/TheoPSR01/jarvis-fr"
+Issues = "https://github.com/TheoPSR01/jarvis-fr/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/jarvis"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
