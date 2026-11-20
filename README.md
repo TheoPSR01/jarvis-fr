@@ -39,6 +39,26 @@ Dans la conversation : `/stats` (coûts et économies), `/souvenirs`, `/oublie N
 
 Jarvis sait donner l'heure et la date, retenir et retrouver des souvenirs, ajouter des notes datées dans `~/.jarvis/notes.md` et ouvrir une application sur Mac (il vous demande toujours confirmation).
 
+## Mode Iron Man
+
+```bash
+jarvis --voix --veille --ville Lyon
+```
+
+Au démarrage, Jarvis affiche son réacteur en ASCII et fait le point, sans appeler l'API (donc gratuitement) : « Bonjour Monsieur. Nous sommes lundi 2 mars 2026, 08:30. À Lyon, 12 degrés, pluie faible… Batterie à 82 %, sur batterie. Que puis-je faire pour vous ? »
+
+Avec `--veille`, il écoute en continu et ne réagit qu'à son nom. « Jarvis, quel temps fait-il ? » est traité directement ; « Jarvis » tout seul lui fait répondre « Oui, Monsieur ? » et il attend la suite.
+
+En plus des outils de base, il sait :
+
+- donner la météo du jour (service Open-Meteo, gratuit et sans clé) pour la ville de `--ville`, de la variable `JARVIS_VILLE`, ou celle que vous lui citez ;
+- faire l'état de l'ordinateur : disque, charge du processeur, batterie ;
+- régler le volume (« mets le son à 30 ») ;
+- piloter l'app Musique : lecture, pause, morceau suivant ou précédent ;
+- programmer un minuteur ou un rappel (« rappelle-moi dans 10 minutes de sortir le gâteau ») : à l'échéance, il vous prévient à voix haute, même au milieu d'une autre conversation.
+
+Le volume, la musique et la batterie ne fonctionnent que sur Mac. Les minuteurs vivent dans la session : ils disparaissent si vous quittez Jarvis. Et il n'a ni armure ni satellite : demandez-lui, il déclinera poliment.
+
 ## En Python
 
 ```python
