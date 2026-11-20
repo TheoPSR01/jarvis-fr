@@ -214,5 +214,5 @@ def test_boucle(memoire):
     sorties, voix = [], []
     boucle(j, lambda: next(entrees), sorties.append, voix.append)
     assert "Jarvis : Il est 14 h 05." in sorties
-    assert voix == ["Il est 14 h 05."]
+    assert voix == ["À votre service.", "Il est 14 h 05."]
     assert sorties[-1] == "Jarvis : À bientôt."
