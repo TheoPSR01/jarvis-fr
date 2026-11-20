@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable, Optional
 
+from . import systeme
 from .memoire import Memoire
 
 JOURS = ("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
@@ -44,6 +45,35 @@ DEFINITIONS = [
                        "L'utilisateur doit confirmer.",
         "input_schema": {"type": "object", "properties": {"nom": {"type": "string"}}, "required": ["nom"]},
     },
+    {
+        "name": "meteo",
+        "description": "Météo actuelle et du jour. Sans ville précisée, utilise la ville de l'utilisateur.",
+        "input_schema": {"type": "object", "properties": {"ville": {"type": "string"}}},
+    },
+    {
+        "name": "etat_systeme",
+        "description": "État de l'ordinateur : batterie, disque, charge du processeur.",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "regler_volume",
+        "description": "Règle le volume du Mac entre 0 et 100.",
+        "input_schema": {"type": "object", "properties": {"niveau": {"type": "integer"}}, "required": ["niveau"]},
+    },
+    {
+        "name": "musique",
+        "description": "Contrôle l'application Musique du Mac.",
+        "input_schema": {"type": "object", "properties": {"action": {
+            "type": "string", "enum": ["lecture", "pause", "suivant", "precedent"]}}, "required": ["action"]},
+    },
+    {
+        "name": "minuteur",
+        "description": "Programme un minuteur ou un rappel : au bout du délai, Jarvis prévient l'utilisateur "
+                       "à voix haute avec le message donné.",
+        "input_schema": {"type": "object", "properties": {"minutes": {"type": "number"},
+                                                          "message": {"type": "string"}},
+                         "required": ["minutes", "message"]},
+    },
 ]
 
 
@@ -64,8 +94,14 @@ class Outils:
     def __init__(self, memoire: Memoire, dossier_notes: Optional[Path] = None,
                  confirmer: Callable[[str], bool] = _confirmer_terminal,
                  ouvrir: Callable[[str], bool] = _ouvrir_mac,
-                 horloge: Callable[[], datetime] = datetime.now):
+                 horloge: Callable[[], datetime] = datetime.now, ville: Optional[str] = None,
+                 minuteurs: Optional[systeme.Minuteurs] = None,
+                 executer: Optional[systeme.Executer] = None, telecharger: Optional[systeme.Telecharger] = None):
         self.memoire = memoire
+        self.ville = ville
+        self.minuteurs = minuteurs if minuteurs is not None else systeme.Minuteurs()
+        self.executer_commande = executer
+        self.telecharger = telecharger
         self.dossier_notes = Path(dossier_notes) if dossier_notes else Path.home() / ".jarvis"
         self.confirmer = confirmer
         self.ouvrir = ouvrir
@@ -110,3 +146,21 @@ class Outils:
         if self.ouvrir(nom):
             return f"{nom} est ouvert."
         return f"Impossible d'ouvrir {nom} (application introuvable ou système autre que macOS)."
+
+    def meteo(self, ville: Optional[str] = None) -> str:
+        ville = (ville or self.ville or "").strip()
+        if not ville:
+            return "Ville inconnue : demandez-la à l'utilisateur (ou lancez Jarvis avec --ville)."
+        return systeme.meteo(ville, self.telecharger)
+
+    def etat_systeme(self) -> str:
+        return systeme.etat_systeme(self.executer_commande)
+
+    def regler_volume(self, niveau: int) -> str:
+        return systeme.regler_volume(niveau, self.executer_commande)
+
+    def musique(self, action: str) -> str:
+        return systeme.musique(action, self.executer_commande)
+
+    def minuteur(self, minutes: float, message: str) -> str:
+        return self.minuteurs.programmer(float(minutes), message)
